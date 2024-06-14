@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/filter.css">
+<link rel="stylesheet" href="css/nouislider.min.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="js/tailDT.js"></script>
+<script src="js/nouislider.min.js"></script>
+<script src="js/wNumb.js"></script>
+        <script src="data/DistrictBoundary_2.js"></script>
+        <script src="data/PUSDScchools_3.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[33.99733246446115,-117.86581654759347],[34.112760262018625,-117.69520673208108]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_MapboxSatellite_0');
+        map.getPane('pane_MapboxSatellite_0').style.zIndex = 400;
+        var layer_MapboxSatellite_0 = L.tileLayer('https://api.mapbox.com/v4/mapbox.satellite/{z}/{x}/{y}.webp?sku=101S0AiAdllT3&access_token=pk.eyJ1Ijoiam9uY2hlbWxhIiwiYSI6IjdXUzRocmsifQ.acEmRifqE4Bh2Xz-IY_4Bw', {
+            pane: 'pane_MapboxSatellite_0',
+            opacity: 1.0,
+            attribution: '<a href="https://www.maxar.com/">Maxar</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_MapboxSatellite_0;
+        map.addLayer(layer_MapboxSatellite_0);
+        map.createPane('pane_BaseMap_1');
+        map.getPane('pane_BaseMap_1').style.zIndex = 401;
+        var layer_BaseMap_1 = L.tileLayer('https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+            pane: 'pane_BaseMap_1',
+            opacity: 1.0,
+            attribution: '<a href="https://cartodb.com/basemaps/">Map tiles by CartoDB, under CC BY 3.0. Data by OpenStreetMap, under ODbL.</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_BaseMap_1;
+        map.addLayer(layer_BaseMap_1);
+        function pop_DistrictBoundary_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_DistrictBoundary_2_0() {
+            return {
+                pane: 'pane_DistrictBoundary_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(125,173,215,0.30196078431372547)',
+                interactive: false,
+            }
+        }
+        map.createPane('pane_DistrictBoundary_2');
+        map.getPane('pane_DistrictBoundary_2').style.zIndex = 402;
+        map.getPane('pane_DistrictBoundary_2').style['mix-blend-mode'] = 'normal';
+        var layer_DistrictBoundary_2 = new L.geoJson(json_DistrictBoundary_2, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_DistrictBoundary_2',
+            layerName: 'layer_DistrictBoundary_2',
+            pane: 'pane_DistrictBoundary_2',
+            onEachFeature: pop_DistrictBoundary_2,
+            style: style_DistrictBoundary_2_0,
+        });
+        bounds_group.addLayer(layer_DistrictBoundary_2);
+        map.addLayer(layer_DistrictBoundary_2);
+        function pop_PUSDScchools_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">School Name</th>\
+                        <td>' + (feature.properties['School Name'] !== null ? autolinker.link(feature.properties['School Name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">School Level</th>\
+                        <td>' + (feature.properties['School Level'] !== null ? autolinker.link(feature.properties['School Level'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Grade Type</th>\
+                        <td>' + (feature.properties['Grade Type'] !== null ? autolinker.link(feature.properties['Grade Type'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">2023 Enrollment</th>\
+                        <td>' + (feature.properties['2023 Enrollment'] !== null ? autolinker.link(feature.properties['2023 Enrollment'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Utilization Category</th>\
+                        <td>' + (feature.properties['Utilization Category'] !== null ? autolinker.link(feature.properties['Utilization Category'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Portable Category</th>\
+                        <td>' + (feature.properties['Portable Category'] !== null ? autolinker.link(feature.properties['Portable Category'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">EA Category</th>\
+                        <td>' + (feature.properties['EA Category'] !== null ? autolinker.link(feature.properties['EA Category'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Facility Condition Category</th>\
+                        <td>' + (feature.properties['Facility Condition Category'] !== null ? autolinker.link(feature.properties['Facility Condition Category'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">% Free and Reduced Lunch</th>\
+                        <td>' + (feature.properties['% Free and Reduced Lunch'] !== null ? autolinker.link(feature.properties['% Free and Reduced Lunch'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_PUSDScchools_3_0(feature) {
+            switch(String(feature.properties['Grade Type'])) {
+                case 'ES':
+                    return {
+                pane: 'pane_PUSDScchools_3',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(74,88,214,0.8470588235294118)',
+                interactive: true,
+            }
+                    break;
+                case 'HS':
+                    return {
+                pane: 'pane_PUSDScchools_3',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(57,212,168,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'K-8':
+                    return {
+                pane: 'pane_PUSDScchools_3',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(203,110,63,1.0)',
+                interactive: true,
+            }
+                    break;
+                case 'MS':
+                    return {
+                pane: 'pane_PUSDScchools_3',
+                radius: 8.0,
+                opacity: 1,
+                color: 'rgba(35,35,35,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(239,138,228,1.0)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_PUSDScchools_3');
+        map.getPane('pane_PUSDScchools_3').style.zIndex = 403;
+        map.getPane('pane_PUSDScchools_3').style['mix-blend-mode'] = 'normal';
+        var layer_PUSDScchools_3 = new L.geoJson(json_PUSDScchools_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_PUSDScchools_3',
+            layerName: 'layer_PUSDScchools_3',
+            pane: 'pane_PUSDScchools_3',
+            onEachFeature: pop_PUSDScchools_3,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_PUSDScchools_3_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_PUSDScchools_3);
+        map.addLayer(layer_PUSDScchools_3);
+        var baseMaps = {};
+        var overlaysTree = [
+            {label: 'PUSD Scchools<br /><table><tr><td style="text-align: center;"><img src="legend/PUSDScchools_3_ES0.png" /></td><td>ES</td></tr><tr><td style="text-align: center;"><img src="legend/PUSDScchools_3_HS1.png" /></td><td>HS</td></tr><tr><td style="text-align: center;"><img src="legend/PUSDScchools_3_K82.png" /></td><td>K-8</td></tr><tr><td style="text-align: center;"><img src="legend/PUSDScchools_3_MS3.png" /></td><td>MS</td></tr></table>', layer: layer_PUSDScchools_3},
+            {label: '<img src="legend/DistrictBoundary_2.png" /> District Boundary', layer: layer_DistrictBoundary_2},
+            {label: "Base Map", layer: layer_BaseMap_1},
+            {label: "Mapbox Satellite", layer: layer_MapboxSatellite_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: false, 
+        });
+        lay.addTo(map);
+        setBounds();
+        map.addControl(new L.Control.Search({
+            layer: layer_PUSDScchools_3,
+            initial: false,
+            hideMarkerOnCollapse: true,
+            propertyName: 'School Name'}));
+        document.getElementsByClassName('search-button')[0].className +=
+         ' fa fa-binoculars';
+        var mapDiv = document.getElementById('map');
+        var row = document.createElement('div');
+        row.className="row";
+        row.id="all";
+        row.style.height = "100%";
+        var col1 = document.createElement('div');
+        col1.className="col9";
+        col1.id = "mapWindow";
+        col1.style.height = "99%";
+        col1.style.width = "80%";
+        col1.style.display = "inline-block";
+        var col2 = document.createElement('div');
+        col2.className="col3";
+        col2.id = "menu";
+        col2.style.display = "inline-block";
+        mapDiv.parentNode.insertBefore(row, mapDiv);
+        document.getElementById("all").appendChild(col1);
+        document.getElementById("all").appendChild(col2);
+        col1.appendChild(mapDiv)
+        var Filters = {"2023 Enrollment": "int","Grade Type": "str","Facility Condition Category": "str","EA Category": "str","Utilization Category": "str","Portable Category": "str"};
+        function filterFunc() {
+          map.eachLayer(function(lyr){
+          if ("options" in lyr && "dataVar" in lyr["options"]){
+            features = this[lyr["options"]["dataVar"]].features.slice(0);
+            try{
+              for (key in Filters){
+                keyS = key.replace(/[^a-zA-Z0-9_]/g, "")
+                if (Filters[key] == "str" || Filters[key] == "bool"){
+                  var selection = [];
+                  var options = document.getElementById("sel_" + keyS).options
+                  for (var i=0; i < options.length; i++) {
+                    if (options[i].selected) selection.push(options[i].value);
+                  }
+                    try{
+                      if (key in features[0].properties){
+                        for (i = features.length - 1;
+                          i >= 0; --i){
+                          if (selection.indexOf(
+                          features[i].properties[key])<0
+                          && selection.length>0) {
+                          features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                  }
+                }
+                if (Filters[key] == "int"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (parseInt(features[i].properties[key])
+                          < sliderVals[0]
+                          || parseInt(features[i].properties[key])
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "real"){
+                  sliderVals =  document.getElementById(
+                    "div_" + keyS).noUiSlider.get();
+                  try{
+                    if (key in features[0].properties){
+                    for (i = features.length - 1; i >= 0; --i){
+                      if (features[i].properties[key]
+                          < sliderVals[0]
+                          || features[i].properties[key]
+                          > sliderVals[1]){
+                            features.splice(i,1);
+                          }
+                        }
+                      }
+                    } catch(err){
+                    }
+                  }
+                if (Filters[key] == "date"
+                  || Filters[key] == "datetime"
+                  || Filters[key] == "time"){
+                  try{
+                    if (key in features[0].properties){
+                      HTMLkey = key.replace(/[&\/\\#,+()$~%.'":*?<>{} ]/g, '');
+                      startdate = document.getElementById("dat_" +
+                        HTMLkey + "_date1").value.replace(" ", "T");
+                      enddate = document.getElementById("dat_" +
+                        HTMLkey + "_date2").value.replace(" ", "T");
+                      for (i = features.length - 1; i >= 0; --i){
+                        if (features[i].properties[key] < startdate
+                          || features[i].properties[key] > enddate){
+                          features.splice(i,1);
+                        }
+                      }
+                    }
+                  } catch(err){
+                  }
+                }
+              }
+            } catch(err){
+            }
+          this[lyr["options"]["layerName"]].clearLayers();
+          this[lyr["options"]["layerName"]].addData(features);
+          }
+          })
+        }
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_2023Enrollment = document.createElement("div");
+            div_2023Enrollment.id = "div_2023Enrollment";
+            div_2023Enrollment.className = "slider";
+            document.getElementById("menu").appendChild(div_2023Enrollment);
+            var lab_2023Enrollment = document.createElement('div');
+            lab_2023Enrollment.innerHTML  = '2023 Enrollment: <span id="val_2023Enrollment"></span>';
+            lab_2023Enrollment.className = 'filterlabel';
+            document.getElementById("menu").appendChild(lab_2023Enrollment);
+            var reset_2023Enrollment = document.createElement('div');
+            reset_2023Enrollment.innerHTML = 'clear filter';
+            reset_2023Enrollment.className = 'filterlabel';
+            lab_2023Enrollment.className = 'filterlabel';
+            reset_2023Enrollment.onclick = function() {
+                sel_2023Enrollment.noUiSlider.reset();
+            };
+            document.getElementById("menu").appendChild(reset_2023Enrollment);
+            var sel_2023Enrollment = document.getElementById('div_2023Enrollment');
+            noUiSlider.create(sel_2023Enrollment, {
+                connect: true,
+                start: [256, 1543],
+                step: 1,
+                format: wNumb({
+                    decimals: 0,
+                    }),
+                range: {
+                min: 256,
+                max: 1543
+                }
+            });
+            sel_2023Enrollment.noUiSlider.on('update', function (values) {
+            filterVals =[];
+            for (value in values){
+            filterVals.push(parseInt(value))
+            }
+            val_2023Enrollment = document.getElementById('val_2023Enrollment');
+            val_2023Enrollment.innerHTML = values.join(' - ');
+                filterFunc()
+            });
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_GradeType = document.createElement('div');
+            div_GradeType.id = "div_GradeType";
+            div_GradeType.className= "filterselect";
+            document.getElementById("menu").appendChild(div_GradeType);
+            sel_GradeType = document.createElement('select');
+            sel_GradeType.multiple = true;
+            sel_GradeType.size = 4;
+            sel_GradeType.id = "sel_GradeType";
+            var GradeType_options_str ="";
+            sel_GradeType.onchange = function(){filterFunc()};
+            GradeType_options_str  += '<option value="ES">ES</option>';
+            GradeType_options_str  += '<option value="K-8">K-8</option>';
+            GradeType_options_str  += '<option value="MS">MS</option>';
+            GradeType_options_str  += '<option value="HS">HS</option>';
+            sel_GradeType.innerHTML = GradeType_options_str;
+            div_GradeType.appendChild(sel_GradeType);
+            var lab_GradeType = document.createElement('div');
+            lab_GradeType.innerHTML = 'Grade Type';
+            lab_GradeType.className = 'filterlabel';
+            div_GradeType.appendChild(lab_GradeType);
+            var reset_GradeType = document.createElement('div');
+            reset_GradeType.innerHTML = 'clear filter';
+            reset_GradeType.className = 'filterlabel';
+            reset_GradeType.onclick = function() {
+                var options = document.getElementById("sel_GradeType").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_GradeType.appendChild(reset_GradeType);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_FacilityConditionCategory = document.createElement('div');
+            div_FacilityConditionCategory.id = "div_FacilityConditionCategory";
+            div_FacilityConditionCategory.className= "filterselect";
+            document.getElementById("menu").appendChild(div_FacilityConditionCategory);
+            sel_FacilityConditionCategory = document.createElement('select');
+            sel_FacilityConditionCategory.multiple = true;
+            sel_FacilityConditionCategory.size = 3;
+            sel_FacilityConditionCategory.id = "sel_FacilityConditionCategory";
+            var FacilityConditionCategory_options_str = "";
+            sel_FacilityConditionCategory.onchange = function(){filterFunc()};
+            FacilityConditionCategory_options_str  += '<option value="Fair">Fair</option>';
+            FacilityConditionCategory_options_str  += '<option value="Poor">Poor</option>';
+            FacilityConditionCategory_options_str  += '<option value="Critical">Critical</option>';
+            sel_FacilityConditionCategory.innerHTML = FacilityConditionCategory_options_str;
+            div_FacilityConditionCategory.appendChild(sel_FacilityConditionCategory);
+            var lab_FacilityConditionCategory = document.createElement('div');
+            lab_FacilityConditionCategory.innerHTML = 'Facility Condition Category';
+            lab_FacilityConditionCategory.className = 'filterlabel';
+            div_FacilityConditionCategory.appendChild(lab_FacilityConditionCategory);
+            var reset_FacilityConditionCategory = document.createElement('div');
+            reset_FacilityConditionCategory.innerHTML = 'clear filter';
+            reset_FacilityConditionCategory.className = 'filterlabel';
+            reset_FacilityConditionCategory.onclick = function() {
+                var options = document.getElementById("sel_FacilityConditionCategory").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_FacilityConditionCategory.appendChild(reset_FacilityConditionCategory);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_EACategory = document.createElement('div');
+            div_EACategory.id = "div_EACategory";
+            div_EACategory.className= "filterselect";
+            document.getElementById("menu").appendChild(div_EACategory);
+            sel_EACategory = document.createElement('select');
+            sel_EACategory.multiple = true;
+            sel_EACategory.size = 3;
+            sel_EACategory.id = "sel_EACategory";
+            var EACategory_options_str = "";
+            sel_EACategory.onchange = function(){filterFunc()};
+            EACategory_options_str  += '<option value="Good">Good</option>';
+            EACategory_options_str  += '<option value="Fair">Fair</option>';
+            EACategory_options_str  += '<option value="Poor">Poor</option>';
+            sel_EACategory.innerHTML = EACategory_options_str;
+            div_EACategory.appendChild(sel_EACategory);
+            var lab_EACategory = document.createElement('div');
+            lab_EACategory.innerHTML = 'EA Category';
+            lab_EACategory.className = 'filterlabel';
+            div_EACategory.appendChild(lab_EACategory);
+            var reset_EACategory = document.createElement('div');
+            reset_EACategory.innerHTML = 'clear filter';
+            reset_EACategory.className = 'filterlabel';
+            reset_EACategory.onclick = function() {
+                var options = document.getElementById("sel_EACategory").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_EACategory.appendChild(reset_EACategory);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_UtilizationCategory = document.createElement('div');
+            div_UtilizationCategory.id = "div_UtilizationCategory";
+            div_UtilizationCategory.className= "filterselect";
+            document.getElementById("menu").appendChild(div_UtilizationCategory);
+            sel_UtilizationCategory = document.createElement('select');
+            sel_UtilizationCategory.multiple = true;
+            sel_UtilizationCategory.size = 3;
+            sel_UtilizationCategory.id = "sel_UtilizationCategory";
+            var UtilizationCategory_options_str = "";
+            sel_UtilizationCategory.onchange = function(){filterFunc()};
+            UtilizationCategory_options_str  += '<option value="Low">Low </option>';
+            UtilizationCategory_options_str  += '<option value="Optimal ">Optimal </option>';
+            UtilizationCategory_options_str  += '<option value="High ">High </option>';
+            sel_UtilizationCategory.innerHTML = UtilizationCategory_options_str;
+            div_UtilizationCategory.appendChild(sel_UtilizationCategory);
+            var lab_UtilizationCategory = document.createElement('div');
+            lab_UtilizationCategory.innerHTML = 'Utilization Category';
+            lab_UtilizationCategory.className = 'filterlabel';
+            div_UtilizationCategory.appendChild(lab_UtilizationCategory);
+            var reset_UtilizationCategory = document.createElement('div');
+            reset_UtilizationCategory.innerHTML = 'clear filter';
+            reset_UtilizationCategory.className = 'filterlabel';
+            reset_UtilizationCategory.onclick = function() {
+                var options = document.getElementById("sel_UtilizationCategory").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_UtilizationCategory.appendChild(reset_UtilizationCategory);
+            document.getElementById("menu").appendChild(
+                document.createElement("div"));
+            var div_PortableCategory = document.createElement('div');
+            div_PortableCategory.id = "div_PortableCategory";
+            div_PortableCategory.className= "filterselect";
+            document.getElementById("menu").appendChild(div_PortableCategory);
+            sel_PortableCategory = document.createElement('select');
+            sel_PortableCategory.multiple = true;
+            sel_PortableCategory.size = 3;
+            sel_PortableCategory.id = "sel_PortableCategory";
+            var PortableCategory_options_str = "=";
+            sel_PortableCategory.onchange = function(){filterFunc()};
+            PortableCategory_options_str  += '<option value="Low">Low</option>';
+            PortableCategory_options_str  += '<option value="Moderate">Moderate</option>';
+            PortableCategory_options_str  += '<option value="High ">High </option>';
+            sel_PortableCategory.innerHTML = PortableCategory_options_str;
+            div_PortableCategory.appendChild(sel_PortableCategory);
+            var lab_PortableCategory = document.createElement('div');
+            lab_PortableCategory.innerHTML = 'Portable Category';
+            lab_PortableCategory.className = 'filterlabel';
+            div_PortableCategory.appendChild(lab_PortableCategory);
+            var reset_PortableCategory = document.createElement('div');
+            reset_PortableCategory.innerHTML = 'clear filter';
+            reset_PortableCategory.className = 'filterlabel';
+            reset_PortableCategory.onclick = function() {
+                var options = document.getElementById("sel_PortableCategory").options;
+                for (var i=0; i < options.length; i++) {
+                    options[i].selected = false;
+                }
+                filterFunc();
+            };
+            div_PortableCategory.appendChild(reset_PortableCategory);
+        </script>
+    </body>
+</html>
